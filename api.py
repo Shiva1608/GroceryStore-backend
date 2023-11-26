@@ -98,7 +98,7 @@ class Products(Resource):
 
     def delete(self):
         try:
-            product = request.form["product"]
+            product = request.args.get("product_id")
             obj = Product.query.filter_by(product_id=product).first()
             db.session.delete(obj)
             db.session.commit()
@@ -106,14 +106,16 @@ class Products(Resource):
             return jsonify({"status": "failed"})
         return jsonify({"status": "success"})
 
-    def patch(self):
-        prod_id = request.args.get("prod_id")
-        new_price = request.form.get("new_price")
-        new_quantity = request.form.get("new_quantity")
+    def put(self):
+        prod_id = request.args.get("product_id")
+        new_unit = request.json["unit"]
+        new_price = request.json["price"]
+        new_quantity = request.json["quantity"]
         try:
             prod = db.session.query(Product).filter_by(product_id=prod_id).first()
             prod.product_price = new_price
             prod.product_quantity = new_quantity
+            prod.product_unit = new_unit
             db.session.add(prod)
             db.session.commit()
             return jsonify({"status": "success"})
