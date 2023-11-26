@@ -1,0 +1,380 @@
+openapi: 3.0.3
+info:
+  title: Grocery Store App
+  version: 1.0.11
+servers:
+  - url: https://127.0.0.1:5000
+paths:
+  /manager:
+    get:
+      tags:
+        - Manager
+      description: Manager Dashboard
+      responses:
+        '200':
+          description: Success
+        '400':
+          description: Success
+        '404':
+          description: Page not found
+    post:
+      tags:
+        - Manager
+      description: Login into Manager Dashboard
+      parameters:
+        - name: username
+          in: query
+          description: Username
+          required: true
+          schema:
+            type: string
+        - name: Password
+          in: query
+          description: Password
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful operation
+        '405':
+          description: Invalid input
+  /manager/category_add:
+    get:
+      tags:
+        - Manager
+      description: Add catgeory form
+      responses:
+        '200':
+          description: Success
+        '400':
+          description: Success
+        '404':
+          description: Page not found
+    post:
+      tags:
+        - Manager
+      description: Create a new category
+      parameters:
+        - name: Category
+          in: query
+          description: Category name
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful operation
+        '405':
+          description: Invalid input
+  /manager/add_product/{category}:
+    get:
+      tags:
+        - Manager
+      description: Add product form
+      parameters:
+        - name: category
+          in: path
+          description: Product name
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+        '400':
+          description: Success
+        '404':
+          description: Page not found  
+    post:
+      tags:
+        - Manager
+      description: Delete a product name
+      parameters:
+        - name: category
+          in: path
+          description: Product name
+          required: true
+          schema:
+            type: string
+        - name: product_name
+          in: query
+          description: Product name
+          required: true
+          schema:
+            type: string
+        - name: product_unit
+          in: query
+          description: Product unit
+          required: true
+          schema:
+            type: string
+        - name: product_price
+          in: query
+          description: Product price
+          required: true
+          schema:
+            type: integer
+        - name: product_quantity
+          in: query
+          description: Product quantity
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Successful operation
+        '405':
+          description: Invalid input
+  /manager/delete_product/{product}:
+    get:
+      tags:
+        - Manager
+      description: Delete an existing product
+      parameters:
+        - name: product
+          in: path
+          description: Product name
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful operation
+        '405':
+          description: Invalid input
+  /manager/rename_category/{category}:
+    get:
+      tags:
+        - Manager
+      description: Rename an existing category form
+      parameters:
+        - name: category
+          in: path
+          description: Category name
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful operation
+        '405':
+          description: Invalid input
+    post:
+      tags:
+        - Manager
+      description: Rename an existing category
+      parameters:
+        - name: category
+          in: path
+          description: Category name
+          required: true
+          schema:
+            type: string
+        - name: new_category_name
+          in: query
+          description: New category name
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful operation
+        '405':
+          description: Invalid input
+  /manager/edit_product/{product}:
+    get:
+      tags:
+        - Manager
+      description: Edit an existing category form
+      parameters:
+        - name: product
+          in: path
+          description: Product name
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful operation
+        '405':
+          description: Invalid input
+    post:
+      tags:
+        - Manager
+      description: Edit an existing product
+      parameters:
+        - name: product
+          in: path
+          description: Product name
+          required: true
+          schema:
+            type: string
+        - name: new_price
+          in: query
+          description: New product price
+          required: true
+          schema:
+            type: integer
+        - name: new_quantity
+          in: query
+          description: New product price
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Successful operation
+        '405':
+          description: Invalid input
+  /{username}:
+    get:
+      tags:
+        - User
+      description: User Dashboard
+      parameters:
+        - name: username
+          in: path
+          description: Usernmae
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful operation
+        '405':
+          description: Invalid input  
+    post:
+      tags:
+        - User
+      description: Search/Filter
+      parameters:
+        - name: username
+          in: path
+          description: Username
+          required: true
+          schema:
+            type: string
+        - name: search
+          in: query
+          description: search item 
+          required: true
+          schema:
+            type: string
+        - name: min
+          in: query
+          description: minimum price 
+          required: true
+          schema:
+            type: string
+        - name: max
+          in: query
+          description: maximum price 
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful operation
+        '405':
+          description: Invalid input  
+  /{username}/add_item/{product_id}:
+    post:
+      tags:
+        - User
+      description: Add product to cart
+      parameters: 
+        - name: username
+          in: path
+          description: Username
+          required: true
+          schema:
+            type: string
+        - name: product_id
+          in: path
+          description: product id
+          required: true
+          schema:
+            type: integer
+        - name: quantity
+          in: query
+          description: Quantity
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Successful operation
+        '405':
+          description: Invalid input  
+  /{username}/cart:
+    get:
+      tags:
+        - User
+      description: Cart
+      parameters:
+        - name: username
+          in: path
+          description: Cart
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful operation
+        '405':
+          description: Invalid input  
+  /{username}/remove/{product}:
+    get:
+      tags:
+        - User
+      description: Remove product from cart
+      parameters:
+        - name: username
+          in: path
+          description: Username
+          required: true
+          schema:
+            type: string
+        - name: product
+          in: path
+          description: Product name
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful operation
+        '405':
+          description: Invalid input  
+  /{username}/editcart/{product}:
+    post:
+      tags:
+        - User
+      description: increment/decrement product in cart
+      parameters:
+        - name: username
+          in: path
+          description: Username
+          required: true
+          schema:
+            type: string
+        - name: product
+          in: path
+          description: Product name
+          required: true
+          schema:
+            type: string
+        - name: quantity
+          in: query
+          description: Product quantity
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Successful operation
+        '405':
+          description: Invalid input 
+          
+          

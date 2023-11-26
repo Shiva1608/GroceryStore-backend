@@ -1,0 +1,168 @@
+{% extends "skeleton.html" %}
+
+{% block title %}
+{{title}}
+{% endblock %}
+
+{% block style %}
+.add{
+    display:flex;
+    justify-content:center;
+    margin-top:7%;
+}
+.col-4 { color: #fff; padding-bottom: 20px; padding-top: 20px; text-align: center; }
+.col-4:nth-child(even) { background: #AAC8A7; }
+.col-4:nth-child(odd) { background: #AAC8A7; }
+.edits{ margin-left:5px;padding:2px 4px;border-radius:50%;border:2px solid black; }
+{% endblock %}
+
+
+{% block items %}
+{% if items == False and addbutton == True %}
+<h4 style="text-align:center;margin-top:10%">No Categories or items available. Create to view them!</h4>
+{% else %}
+<div style="margin-top:2%" class="container" >
+    {% for category in items %}
+    <h2 style="display:inline-block;margin-bottom:1.5%;padding-top:1%;">{{category.category_name|upper}}</h2>
+    <a href="/manager/add_product/{{category.category_id}}_{{category.category_name}}"><button class="edits material-symbols-outlined">add</button></a>
+    <a href="/manager/rename_category/{{category.category_name}}"><button class="edits material-symbols-outlined">edit</button></a>
+
+    <button class="edits material-symbols-outlined" type="button" data-bs-target="#delete{{category.category_name.replace(' ','')}}" data-bs-toggle="modal">delete</button>
+
+    <div class="modal fade" data-bs-backdrop="static" id="delete{{category.category_name.replace(' ','')}}">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title">Confirmation</h3>
+                    <button type="button" class="btn-close" style="margin-top:1.5%;" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <h6>Are you sure you want to delete the category {{category.category_name}} ?</h6>
+                    <br>
+                    <a href="/manager/delete_category/{{category.category_id}}_{{category.category_name}}"><button class="btn btn-primary">Yes</button></a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div style="margin-bottom:4%;" class="category row flex-nowrap overflow-auto">
+        {% for product in category.products %}
+        <div class="product col-4" id="{{product.product_name}}" style="color:black;border: 2px solid black">
+            <h1 style="display:inline-block;">{{product.product_name}}</h1>
+            <a href="/manager/edit_product/{{product.product_name}}"><button class="edits material-symbols-outlined">edit</button></a>
+            <button class="edits material-symbols-outlined" data-bs-toggle="modal" type="button" data-bs-target="#delete{{product.product_name.replace(' ','')}}">delete</button>
+
+        <div class="modal fade" data-bs-backdrop="static" id="delete{{product.product_name.replace(' ','')}}">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title">Confirmation</h3>
+                    <button type="button" class="btn-close" style="margin-top:1.5%;" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <h6>Are you sure you want to delete the product {{product.product_name}} ?</h6>
+                    <br>
+                    <a href="/manager/delete_product/{{product.product_name}}"><button class="btn btn-primary">Yes</button></a>
+                </div>
+            </div>
+        </div>
+        </div>
+
+            <h5 style="margin-top:3%;">{{product.product_price}} {{product.product_unit}}</h5>
+            <h5>Items left : {{product.product_quantity}}</h5>
+        </div>
+        {% endfor %}
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+{% endblock %}
+
+
+{% block plus %}
+{% if addbutton%}
+<a href="/manager/category_add"><button style="background-color:purple;color:white;padding:15px 25px;border-radius:50%;border:2px purple;bottom:20px;position:fixed;right:20px">
+    <span style="margin-top:8px;margin-left:2px;" class="material-symbols-outlined">add</span>
+</button></a>
+{% elif not add_product and not edit_cat and not edit_prod %}
+<div class="container add" style="background-color:grey;width:40%;padding-bottom:10%">
+    <form action="/manager/category_add" method="post">
+        <br><br>
+        <h4>ADD A NEW CATEGORY:</h4>
+        <br>
+        <h5>Category Name</h5>
+        <input style="border:4px grey;border-radius:5px;" type="text" name="category" />
+        <br>
+        <p id="error"></p>
+        <button type="submit" class="btn btn-white bg-white">Add</button>
+    </form>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block product %}
+{% if not addbutton and add_product %}
+<div class="container add" style="background-color:grey;width:40%;padding-bottom:10%">
+    <form action="/manager/add_product/{{category}}" method="post">
+        <br><br>
+        <h4>ADD A NEW PRODUCT TO {{category.split('_')[1]|upper}}:</h4>
+        <br>
+        <h5>Product name</h5>
+        <input style="border:4px grey;border-radius:5px;" type="text" name="product" required/>
+        <br><br>
+        <h5>Unit</h5>
+        <select style="border:4px grey;border-radius:5px;" class="form-select" name="unit" required>
+            <option selected value="Rs/Kg">Rs/Kg</option>
+            <option value="Rs/Litre">Rs/Litre</option>
+            <option value="Rs/Dozen">Rs/dozen</option>
+            <option value="Rs/piece">Rs/piece</option>
+        </select>
+        <br>
+        <h5>Price/unit</h5>
+        <input style="border:4px grey;border-radius:5px;" type="number" name="price" required/>
+        <br>
+        <h5>Quantity</h5>
+        <input style="border:4px grey;border-radius:5px;" type="number" name="quantity" required />
+        <br>
+        <p></p>
+        <button type="submit" class="btn btn-white bg-white">Add</button>
+    </form>
+</div>
+{% elif addbutton==False and edit_cat==True %}
+<div class="container add" style="background-color:grey;width:40%;padding-bottom:10%">
+    <form action="/manager/rename_category/{{category}}" method="post">
+        <br><br>
+        <h4>RENAME CATEGORY:</h4>
+        <br>
+        <h5>Category Name</h5>
+        <input style="border:4px grey;border-radius:5px;" type="text" name="new_cat" />
+        <br>
+        <p></p>
+        <button type="submit" class="btn btn-white bg-white">Add</button>
+    </form>
+</div>
+{% elif not addbutton and edit_prod %}
+<div class="container add" style="background-color:grey;width:40%;padding-bottom:10%">
+    <form action="/manager/edit_product/{{product.product_name}}" method="post">
+        <br><br>
+        <h4>EDIT PRODUCT - {{product.product_name}}</h4>
+        <br>
+        <h5>New Price/unit</h5>
+        <input style="border:4px grey;border-radius:5px;" value="{{product.product_price}}" type="number" name="new_price" required/>
+        <br>
+        <h5>Quantity</h5>
+        <input style="border:4px grey;border-radius:5px;" type="number" value="{{product.product_quantity}}" name="new_quantity" required />
+        <br>
+        <p></p>
+        <button type="submit" class="btn btn-white bg-white">Save</button>
+    </form>
+</div>
+{% endif %}
+
+    <div class="toast align-items-center" role="alert" style="left:20px;bottom:20px;position:fixed;font-size:150%">
+        <div class="toast-body">
+            {{error}}
+        </div>
+    </div>
+
+{% endblock %}
