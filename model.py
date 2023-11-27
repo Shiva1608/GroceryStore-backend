@@ -27,10 +27,12 @@ class Category(db.Model):
 
 @dataclass
 class Cart(db.Model):
+    __allow_unmapped__ = True
     user_id: str = Column(String, ForeignKey("users.user_id"), nullable=False)
     product_id: int = Column(Integer, ForeignKey("product.product_id"), nullable=False)
     cart_id: int = Column(Integer, primary_key=True, autoincrement=True)
     quantity: int = Column(Integer, nullable=False)
+    product: Product = relationship('Product', backref='carts')
 
 
 @dataclass

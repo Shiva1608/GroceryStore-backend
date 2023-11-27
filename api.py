@@ -63,8 +63,8 @@ class Cart_items(Resource):
         return jsonify({"status": "failure"})
 
     def post(self, username):
-        prod_id = request.form.get("id")
-        quantity = int(request.form.get("quantity"))
+        prod_id = request.json["prod_id"]
+        quantity = int(request.json["quantity"])
         try:
             obj = Cart(user_id=username, product_id=int(prod_id), quantity=quantity)
             db.session.add(obj)
@@ -81,6 +81,21 @@ class Cart_items(Resource):
             return jsonify({"status": "success"})
         except:
             return jsonify({"status": "failed"})
+
+    def patch(self, username):
+        try:
+            cart = Cart.query.filter_by(user_id=username).all()
+            for i in cart:
+                prod = Product.query.filter_by(product_id=i.product_id).first()
+                prod.product_quantity -= i.quantity
+                db.session.add(prod)
+                db.session.commit()
+                db.session.delete(i)
+                db.session.commit()
+            return jsonify({"status": "failure"})
+        except Exception as e:
+            print(e)
+            return jsonify({"status": "success"})
 
 
 class Products(Resource):
