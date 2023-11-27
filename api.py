@@ -58,7 +58,7 @@ class Categories(Resource):
 class Cart_items(Resource):
     def get(self, username):
         if username:
-            cart_items = Users.query.filter_by(user_id=username).first().items
+            cart_items = User.query.filter_by(email=username).first().items
             return jsonify(cart_items)
         return jsonify({"status": "failure"})
 
@@ -66,7 +66,7 @@ class Cart_items(Resource):
         prod_id = request.json["prod_id"]
         quantity = int(request.json["quantity"])
         try:
-            obj = Cart(user_id=username, product_id=int(prod_id), quantity=quantity)
+            obj = Cart(email=username, product_id=int(prod_id), quantity=quantity)
             db.session.add(obj)
             db.session.commit()
             return jsonify({"status": "success"})
@@ -76,7 +76,7 @@ class Cart_items(Resource):
     def delete(self, username):
         prod_id = request.args.get("prod_id")
         try:
-            Cart.query.filter_by(product_id=prod_id, user_id=username).delete()
+            Cart.query.filter_by(product_id=prod_id, email=username).delete()
             db.session.commit()
             return jsonify({"status": "success"})
         except:
@@ -84,7 +84,7 @@ class Cart_items(Resource):
 
     def patch(self, username):
         try:
-            cart = Cart.query.filter_by(user_id=username).all()
+            cart = Cart.query.filter_by(email=username).all()
             for i in cart:
                 prod = Product.query.filter_by(product_id=i.product_id).first()
                 prod.product_quantity -= i.quantity

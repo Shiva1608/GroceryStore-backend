@@ -28,7 +28,7 @@ class Category(db.Model):
 @dataclass
 class Cart(db.Model):
     __allow_unmapped__ = True
-    user_id: str = Column(String, ForeignKey("users.user_id"), nullable=False)
+    email: str = Column(String, ForeignKey("user.email"), nullable=False)
     product_id: int = Column(Integer, ForeignKey("product.product_id"), nullable=False)
     cart_id: int = Column(Integer, primary_key=True, autoincrement=True)
     quantity: int = Column(Integer, nullable=False)
@@ -36,18 +36,10 @@ class Cart(db.Model):
 
 
 @dataclass
-class Users(db.Model):
-    __allow_unmapped__ = True
-    user_id: str = Column(String, primary_key=True)
-    password = Column(String, nullable=False)
-    items: list[Cart] = relationship("Cart", backref="username")
-
-
-@dataclass
 class RolesUsers(db.Model):
     __tablename__ = 'roles_users'
     id: int = db.Column(db.Integer(), primary_key=True)
-    user_id: int = db.Column('user_id', db.Integer(), db.ForeignKey('user.id'))
+    user_email: int = db.Column('user_email', db.Integer(), db.ForeignKey('user.email'))
     role_id: int = db.Column('role_id', db.Integer(), db.ForeignKey('role.id'))
 
 
@@ -61,10 +53,11 @@ class Role(db.Model, RoleMixin):
 @dataclass
 class User(db.Model, UserMixin):
     __allow_unmapped__ = True
-    id: int = db.Column(db.Integer, primary_key=True)
-    email: str = db.Column(db.String(255), unique=True, index=True)
+    username: str = db.Column(db.String(255), nullable=False)
+    email: str = db.Column(db.String(255), primary_key=True, index=True)
     password: str = db.Column(db.String(255))
     active: bool = db.Column(db.Boolean())
     fs_uniquifier: str = db.Column(db.String(255), unique=True, nullable=False)
     roles: list[Role] = db.relationship('Role', secondary='roles_users',
                                         backref=db.backref('users', lazy='dynamic'))
+    items: list[Cart] = relationship("Cart")
