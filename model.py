@@ -1,6 +1,6 @@
 from flask_security import RoleMixin, UserMixin
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import Column, String, Integer, ForeignKey
+from sqlalchemy import Column, String, Integer, ForeignKey, Boolean
 from sqlalchemy.orm import relationship
 from dataclasses import dataclass
 
@@ -8,13 +8,36 @@ db = SQLAlchemy()
 
 
 @dataclass
-class Product(db.Model):
+class CategoryChange(db.Model):
+    id: int = Column(Integer, primary_key=True, autoincrement=True)
     category_id: int = Column(Integer, ForeignKey("category.category_id"))
+    category_name: str = Column(String, nullable=False, unique=True)
+    add: bool = Column(Boolean, default=False)
+    delete: bool = Column(Boolean, default=False)
+
+
+@dataclass
+class ProductChange(db.Model):
+    id: int = Column(Integer, primary_key=True, autoincrement=True)
+    product_id: int = Column(Integer, ForeignKey("product.product_id"))
+    product_name: str = Column(String, nullable=False, unique=True)
+    product_unit: str = Column(String, nullable=False)
+    product_price: int = Column(Integer, nullable=False)
+    product_quantity: int = Column(Integer)
+    add: bool = Column(Boolean, default=False)
+    delete: bool = Column(Boolean, default=False)
+
+
+@dataclass
+class Product(db.Model):
+    __allow_unmapped__ = True
+    category_id: int = Column(Integer, ForeignKey("category.category_id"), nullable=False)
     product_id: int = Column(Integer, primary_key=True, autoincrement=True)
     product_name: str = Column(String, nullable=False, unique=True)
     product_unit: str = Column(String, nullable=False)
     product_price: int = Column(Integer, nullable=False)
     product_quantity: int = Column(Integer)
+    changes: list[ProductChange] = relationship("ProductChange")
 
 
 @dataclass
@@ -23,6 +46,8 @@ class Category(db.Model):
     category_id: int = Column(Integer, primary_key=True, autoincrement=True)
     category_name: str = Column(String, nullable=False, unique=True)
     products: list[Product] = relationship("Product", backref="company")
+    changes: list[CategoryChange] = relationship("CategoryChange")
+
 
 
 @dataclass
@@ -32,7 +57,7 @@ class Cart(db.Model):
     product_id: int = Column(Integer, ForeignKey("product.product_id"), nullable=False)
     cart_id: int = Column(Integer, primary_key=True, autoincrement=True)
     quantity: int = Column(Integer, nullable=False)
-    product: Product = relationship('Product', backref='carts')
+    product: list[Product] = relationship('Product', backref='carts')
 
 
 @dataclass
@@ -51,6 +76,14 @@ class Role(db.Model, RoleMixin):
 
 
 @dataclass
+class ManagerApproval(db.Model):
+    __allow_unmapped__ = True
+    id: int = Column(Integer, primary_key=True, autoincrement=True)
+    email: str = Column(String, ForeignKey("user.email"), nullable=False)
+    status: bool = Column(Boolean, default=False)
+
+
+@dataclass
 class User(db.Model, UserMixin):
     __allow_unmapped__ = True
     username: str = db.Column(db.String(255), nullable=False)
@@ -61,3 +94,4 @@ class User(db.Model, UserMixin):
     roles: list[Role] = db.relationship('Role', secondary='roles_users',
                                         backref=db.backref('users', lazy='dynamic'))
     items: list[Cart] = relationship("Cart")
+    approved: list[ManagerApproval] = relationship("ManagerApproval")
