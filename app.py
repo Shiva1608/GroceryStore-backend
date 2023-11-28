@@ -107,16 +107,20 @@ class AdminAction(Resource):
 
 
 class Changes(Resource):
+    @auth_required("token")
     def get(self):
         try:
             name = request.args.get("for")
             if name == "cat":
                 cats = Category.query.all()
-                print(cats)
                 return jsonify(cats)
+            elif name == "prod":
+                prods = Product.query.all()
+                return jsonify(prods)
         except Exception as e:
             print(e)
 
+    @auth_required("token")
     def put(self):
         try:
             name = request.args.get("for")
@@ -139,11 +143,28 @@ class Changes(Resource):
                     db.session.commit()
                 db.session.delete(obj)
                 db.session.commit()
-                return jsonify({"status": "success"})
+            elif name == "prod":
+                obj = ProductChange.query.filter_by(id=cat_id).first()
+                if obj.add == False and obj.delete == False:
+                    obj2 = Product.query.filter_by(product_id=obj.product_id).first()
+                    obj2.product_name = obj.product_name
+                    obj2.product_price = obj.product_price
+                    obj2.product_unit = obj.product_unit
+                    obj2.product_quantity = obj.product_quantity
+                    db.session.add(obj2)
+                    db.session.commit()
+                if obj.delete:
+                    obj1 = Product.query.filter_by(product_id=obj.product_id).first()
+                    db.session.delete(obj1)
+                    db.session.commit()
+                db.session.delete(obj)
+                db.session.commit()
+            return jsonify({"status": "success"})
         except Exception as e:
             print(e)
             return jsonify({"status": "failure"})
 
+    @auth_required("token")
     def delete(self):
         try:
             name = request.args.get("for")
@@ -157,10 +178,20 @@ class Changes(Resource):
                 else:
                     db.session.delete(obj)
                     db.session.commit()
+            elif name == "prod":
+                obj = ProductChange.query.filter_by(id=cat_id).first()
+                if obj.add:
+                    obj1 = Product.query.filter_by(product_id=obj.product_id).first()
+                    db.session.delete(obj1)
+                    db.session.commit()
+                else:
+                    db.session.delete(obj)
+                    db.session.commit()
             return jsonify({"status": "success"})
         except Exception as e:
             print(e)
             return jsonify({"status": "failure"})
+
 
 API.add_resource(Categories, '/categories', '/categories/<cate_id>')
 API.add_resource(Cart_items, '/cart/<username>')
