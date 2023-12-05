@@ -1,0 +1,13 @@
+@auth_required("token")
+    def delete(self, cate_id):
+        try:
+            obj = Product.query.filter_by(category_id=cate_id).first()
+            if obj:
+                db.session.delete(obj)
+                db.session.commit()
+            db.session.delete(Category.query.filter_by(category_id=cate_id).first())
+            db.session.commit()
+            return jsonify({"status": "success"})
+        except Exception as e:
+            print(e)
+            return jsonify({"status": "failed"})

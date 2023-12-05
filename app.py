@@ -6,6 +6,8 @@ from flask_security import SQLAlchemyUserDatastore, Security, hash_password, ver
 from flask_sqlalchemy import SQLAlchemy
 from configuration import DevelopmentConfig
 from model import db, User, Role
+from worker import celery_init_app
+from task import task_done
 
 
 def initialize():
@@ -23,6 +25,14 @@ def initialize():
 
 app, API, datastore, migrate = initialize()
 from api import *
+
+# celery_app = celery_init_app(app)
+
+
+@app.get("/celery-test")
+def t1():
+    result = task_done.delay()
+    return jsonify({"id": result.id})
 
 
 @app.post("/user-login")
