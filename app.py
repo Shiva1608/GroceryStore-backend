@@ -1,38 +1,90 @@
-from flask import Flask
+from celery.result import AsyncResult
+from celery.schedules import crontab
+from flask import Flask, send_file
 from flask_cors import CORS
-from flask_migrate import Migrate
 from flask_restful import Api
 from flask_security import SQLAlchemyUserDatastore, Security, hash_password, verify_password
 from flask_sqlalchemy import SQLAlchemy
+from jinja2 import Template
+from adminapi import AdminAction, Changes
+from caching import cache
 from configuration import DevelopmentConfig
-from model import db, User, Role
+import flask_excel as excel
+from model import *
 from worker import celery_init_app
-from task import task_done
+from task import daily_reminder, download_csv, monthly_report, download_csv2
 
 
 def initialize():
     app = Flask(__name__)
     app.config.from_object(DevelopmentConfig)
     db.init_app(app)
+    excel.init_excel(app)
+    cache.init_app(app)
     datastore = SQLAlchemyUserDatastore(db, User, Role)
     app.security = Security(app, datastore)
     app.app_context().push()
     API = Api(app)
     CORS(app)
-    migrate = Migrate(app, db)
-    return app, API, datastore, migrate
+    return app, API, datastore
 
 
-app, API, datastore, migrate = initialize()
+app, API, datastore = initialize()
+
+celery_app = celery_init_app(app)
 from api import *
 
-# celery_app = celery_init_app(app)
+
+@celery_app.on_after_configure.connect
+def send_mail(sender, **kwargs):
+    users = User.query.filter(User.roles.any(name='customer')).all()
+    for user in users:
+        order = Order.query.filter_by(email=user.email).all()
+        f = open("report.html")
+        report_html = Template(f.read())
+        sender.add_periodic_task(crontab(day_of_month="0"), monthly_report.s(user.email, "OrderReport",
+                                                                             report_html.render(email=user.email,
+                                                                                                orders=order)))
 
 
-@app.get("/celery-test")
-def t1():
-    result = task_done.delay()
-    return jsonify({"id": result.id})
+@celery_app.on_after_configure.connect
+def send_reminder(sender, **kwargs):
+    users = User.query.filter(User.roles.any(name='customer')).all()
+    for user in users:
+        f = open("reminder.html")
+        reminder_html = Template(f.read())
+        sender.add_periodic_task(crontab(hour="17"), daily_reminder.s(user.email, "Reminder",
+                                                                      reminder_html.render()))
+
+
+@auth_required("token")
+@roles_accepted("manager")
+@app.get("/download-sales")
+def download_sales():
+    res = download_csv.delay()
+    return jsonify({"id": res.id})
+
+
+@auth_required("token")
+@roles_accepted("manager")
+@app.get("/download-stock")
+def download_stock():
+    res = download_csv2.delay()
+    return jsonify({"id": res.id})
+
+
+@auth_required("token")
+@roles_accepted("manager")
+@app.get("/get-csv/<task_id>")
+def result_csv(task_id):
+    result = AsyncResult(task_id)
+    if result.ready():
+        if result.result is None:
+            return jsonify({"message": "No data!"}), 404
+        filename = result.result
+        return send_file(filename, as_attachment=True, mimetype="text/csv", download_name=filename)
+    else:
+        return jsonify({"message": "Action pending!"}), 404
 
 
 @app.post("/user-login")
@@ -81,126 +133,6 @@ def signup():
             return jsonify({"error": "You will receive a mail once admin approves your request!"})
     except Exception as e:
         print(e)
-
-
-class AdminAction(Resource):
-    @auth_required("token")
-    def get(self):
-        try:
-            data = User.query.filter_by(active=False).with_entities(User.username, User.email).all()
-            result = [{'username': row.username, 'email': row.email} for row in data]
-            return jsonify(result)
-        except Exception as e:
-            print(e)
-
-    @auth_required("token")
-    def patch(self):
-        try:
-            action = request.args.get("action")
-            email = request.json["email"]
-            if int(action) == 1:
-                obj = datastore.find_user(email=email)
-                obj.active = True
-                db.session.add(obj)
-                db.session.commit()
-                return jsonify({"status": "success"})
-            elif int(action) == 0:
-                obj = datastore.find_user(email=email)
-                obj1 = RolesUsers.query.filter_by(user_email=email).first()
-                db.session.delete(obj1)
-                db.session.commit()
-                db.session.delete(obj)
-                db.session.commit()
-                return jsonify({"status": "success"})
-        except Exception as e:
-            print(e)
-
-
-class Changes(Resource):
-    @auth_required("token")
-    def get(self):
-        try:
-            name = request.args.get("for")
-            if name == "cat":
-                cats = Category.query.all()
-                return jsonify(cats)
-            elif name == "prod":
-                prods = Product.query.all()
-                return jsonify(prods)
-        except Exception as e:
-            print(e)
-
-    @auth_required("token")
-    def put(self):
-        try:
-            name = request.args.get("for")
-            cat_id = request.args.get("id")
-            if name == "cat":
-                obj = CategoryChange.query.filter_by(id=cat_id).first()
-                obj1 = Category.query.filter_by(category_id=obj.category_id).first()
-                if obj.delete:
-                    obj2 = Product.query.filter_by(category_id=obj.category_id).all()
-                    for i in obj2:
-                        obj3 = ProductChange.query.filter_by(product_id=i.product_id).first()
-                        db.session.delete(obj3)
-                        db.session.delete(i)
-                    db.session.commit()
-                    db.session.delete(obj1)
-                    db.session.commit()
-                if obj.add == False and obj.delete == False:
-                    obj1.category_name = obj.category_name
-                    db.session.add(obj1)
-                    db.session.commit()
-                db.session.delete(obj)
-                db.session.commit()
-            elif name == "prod":
-                obj = ProductChange.query.filter_by(id=cat_id).first()
-                if obj.add == False and obj.delete == False:
-                    obj2 = Product.query.filter_by(product_id=obj.product_id).first()
-                    obj2.product_name = obj.product_name
-                    obj2.product_price = obj.product_price
-                    obj2.product_unit = obj.product_unit
-                    obj2.product_quantity = obj.product_quantity
-                    db.session.add(obj2)
-                    db.session.commit()
-                if obj.delete:
-                    obj1 = Product.query.filter_by(product_id=obj.product_id).first()
-                    db.session.delete(obj1)
-                    db.session.commit()
-                db.session.delete(obj)
-                db.session.commit()
-            return jsonify({"status": "success"})
-        except Exception as e:
-            print(e)
-            return jsonify({"status": "failure"})
-
-    @auth_required("token")
-    def delete(self):
-        try:
-            name = request.args.get("for")
-            cat_id = request.args.get("id")
-            if name == "cat":
-                obj = CategoryChange.query.filter_by(id=cat_id).first()
-                if obj.add:
-                    obj1 = Category.query.filter_by(category_id=obj.category_id).first()
-                    db.session.delete(obj1)
-                    db.session.commit()
-                else:
-                    db.session.delete(obj)
-                    db.session.commit()
-            elif name == "prod":
-                obj = ProductChange.query.filter_by(id=cat_id).first()
-                if obj.add:
-                    obj1 = Product.query.filter_by(product_id=obj.product_id).first()
-                    db.session.delete(obj1)
-                    db.session.commit()
-                else:
-                    db.session.delete(obj)
-                    db.session.commit()
-            return jsonify({"status": "success"})
-        except Exception as e:
-            print(e)
-            return jsonify({"status": "failure"})
 
 
 API.add_resource(Categories, '/categories', '/categories/<cate_id>')

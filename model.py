@@ -1,6 +1,8 @@
+from datetime import datetime
+
 from flask_security import RoleMixin, UserMixin
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import Column, String, Integer, ForeignKey, Boolean
+from sqlalchemy import Column, String, Integer, ForeignKey, Boolean, DateTime
 from sqlalchemy.orm import relationship
 from dataclasses import dataclass
 
@@ -49,7 +51,6 @@ class Category(db.Model):
     changes: list[CategoryChange] = relationship("CategoryChange")
 
 
-
 @dataclass
 class Cart(db.Model):
     __allow_unmapped__ = True
@@ -95,3 +96,14 @@ class User(db.Model, UserMixin):
                                         backref=db.backref('users', lazy='dynamic'))
     items: list[Cart] = relationship("Cart")
     approved: list[ManagerApproval] = relationship("ManagerApproval")
+
+
+@dataclass
+class Order(db.Model):
+    __allow_unmapped__ = True
+    order_id: int = Column(Integer, primary_key=True, nullable=False, autoincrement=True)
+    email: str = Column(String, ForeignKey("user.email"), nullable=False)
+    product_name: str = Column(String, nullable=False)
+    product_price: int = Column(Integer, nullable=False)
+    order_time: datetime = Column(DateTime, default=datetime.now())
+    quantity: int = Column(Integer, nullable=False)

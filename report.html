@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>VISIT SITE</title>
+</head>
+<body>
+    {% if orders|length > 0 %}
+    <h1>Order details for the past month!</h1>
+    <table border="1">
+    <thead>
+        <tr>
+            <th>OrderNo.</th>
+            <th>ProductName</th>
+            <th>Quantity</th>
+            <th>Date</th>
+        </tr>
+    </thead>
+
+    <tbody>
+    {% for order in orders %}
+        <tr>
+            <td>{{loop.index}}</td>
+            <td>{{order['product_name']}}</td>
+            <td>{{order['quantity']}}</td>
+            <td>{{order['order_time']}}</td>
+        </tr>
+    {% endfor %}
+    </tbody>
+    </table>
+    {% else %}
+    <h3>You have not ordered anything in the past month!</h3>
+    <a href="http://localhost:8080/customer">Go shop!</a>
+    {% endif %}
+</body>
+</html>
