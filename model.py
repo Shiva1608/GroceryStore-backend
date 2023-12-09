@@ -1,5 +1,4 @@
 from datetime import datetime
-
 from flask_security import RoleMixin, UserMixin
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import Column, String, Integer, ForeignKey, Boolean, DateTime

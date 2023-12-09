@@ -70,7 +70,6 @@ class Changes(Resource):
                 if obj.delete:
                     obj2 = Product.query.filter_by(category_id=obj.category_id).all()
                     for i in obj2:
-                        print(i)
                         obj3 = ProductChange.query.filter_by(product_id=i.product_id).first()
                         if obj3:
                             db.session.delete(obj3)
@@ -111,10 +110,8 @@ class Changes(Resource):
         try:
             name = request.args.get("for")
             cat_id = request.args.get("id")
-            print(cat_id, name)
             if name == "cat":
                 obj = CategoryChange.query.filter_by(id=cat_id).first()
-                print(obj)
                 if obj.add:
                     obj1 = Category.query.filter_by(category_id=obj.category_id).first()
                     db.session.delete(obj1)

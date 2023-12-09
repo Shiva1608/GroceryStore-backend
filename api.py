@@ -8,6 +8,7 @@ from flask import jsonify, request
 
 class Categories(Resource):
     @auth_required("token")
+    @cache.cached(timeout=10)
     def get(self, cate_id=None):
         if cate_id is not None:
             items = Category.query.filter_by(category_id=cate_id).first()
@@ -29,8 +30,6 @@ class Categories(Resource):
             db.session.add(obj1)
             db.session.commit()
             return jsonify({"status": "success"})
-        # except sqlalchemy.exc.IntegrityError:
-        #     return jsonify({"error": "Category already exists !"})
         except Exception as e:
             print(e)
 
